@@ -1,15 +1,15 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
-public class Pixel : MonoBehaviour
+public class Pixel : GameUnit
 {
     public int ID { get; private set; }
 
-    public TextMeshPro Text;
-    Color PixelColor;
+    [SerializeField] TextMeshPro Text;
+    [SerializeField]Color PixelColor;
 
-    public SpriteRenderer Background;
-    public SpriteRenderer Border;
+    [SerializeField] SpriteRenderer Background;
+    [SerializeField] SpriteRenderer Border;
     public bool IsFilledIn
     {
         get
@@ -24,8 +24,6 @@ public class Pixel : MonoBehaviour
             }
         }
     }
-
- 
 
     public void SetData(Color color, int colorID)
     {
@@ -73,3 +71,4 @@ public class Pixel : MonoBehaviour
         }
     }
 }
+

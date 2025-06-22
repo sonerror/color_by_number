@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 1207389421}
   - component: {fileID: 1207389420}
   - component: {fileID: 1207389419}
+  - component: {fileID: 1207389422}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -174,13 +175,13 @@ Camera:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 1
-    height: 1
+    width: 1080
+    height: 1920
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
-  orthographic size: 5
+  orthographic: 1
+  orthographic size: 5.28
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -211,54 +212,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1677184018
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1677184019}
-  - component: {fileID: 1677184020}
-  m_Layer: 0
-  m_Name: Level
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1677184019
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1677184018}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 579.58624, y: 1361.8365, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1677184020
+--- !u!114 &1207389422
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1677184018}
+  m_GameObject: {fileID: 1207389418}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49de2db8da0314f4ebb2000359b02cd0, type: 3}
+  m_Script: {fileID: 11500000, guid: ea06a0e65b6b247d8929a3dd55041031, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Texture: {fileID: 2800000, guid: ca019cacf02cc4a91aedce42715e5cd5, type: 3}
+  zoomPadding: 1
+  cameraZPosition: -10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1207389421}
-  - {fileID: 1677184019}

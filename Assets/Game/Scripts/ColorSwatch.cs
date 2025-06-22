@@ -1,30 +1,51 @@
+﻿using TMPro;
 using UnityEngine;
 
 public class ColorSwatch : MonoBehaviour
 {
     public int ID { get; private set; }
-    private SpriteRenderer _renderer;
+
+    bool Completed;
+    bool Selected;
+    TextMeshPro Text;
+    SpriteRenderer Background;
+    SpriteRenderer Border;
 
     void Awake()
     {
-        _renderer = GetComponent<SpriteRenderer>();
+        Border = transform.Find("Border").GetComponent<SpriteRenderer>();
+        Background = transform.Find("Background").GetComponent<SpriteRenderer>();
+        Text = transform.Find("Text").GetComponent<TextMeshPro>();
     }
 
     public void SetData(int id, Color color)
     {
         ID = id;
-        _renderer.color = color;
-    }
-
-    public void SetSelected(bool selected)
-    {
-        // ví dụ: làm sáng hoặc tối màu khi được chọn
-        _renderer.color *= selected ? 1.2f : 0.8f;
+        Text.text = id.ToString();
+        Background.color = color;
     }
 
     public void SetCompleted()
     {
-        // ví dụ: làm mờ khi hoàn thành
-        _renderer.color = new Color(_renderer.color.r, _renderer.color.g, _renderer.color.b, 0.5f);
+        Completed = true;
+        Text.text = "";
     }
+
+    public void SetSelected(bool selected)
+    {
+        if (!Completed)
+        {
+            Selected = selected;
+            if (Selected)
+            {
+                Border.color = Color.yellow;
+            }
+            else
+            {
+                Border.color = Color.black;
+            }
+        }
+    }
+
+
 }

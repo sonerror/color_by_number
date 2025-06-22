@@ -35,9 +35,7 @@ public class Level : MonoBehaviour
             {
                 if (colors[x + y * Texture.width].a != 0)
                 {
-                    GameObject go = GameObject.Instantiate(Resources.Load("Pixel") as GameObject);
-                    go.transform.position = new Vector3(x, y);
-
+                    Pixel go = SimplePool.Spawn<Pixel>(PoolType.Pixel, new Vector3(x, y), Quaternion.identity);
                     int id = ID;
                     if (Colors.ContainsKey(colors[x + y * Texture.width]))
                     {
@@ -102,7 +100,6 @@ public class Level : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
-            // Check if we clicked on a color swatch
             int hitCount = Physics2D.RaycastNonAlloc(mousePos, Vector2.zero, Hits);
             for (int n = 0; n < hitCount; n++)
             {
