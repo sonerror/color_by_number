@@ -4,10 +4,8 @@ using UnityEngine;
 public class Pixel : GameUnit
 {
     public int ID { get; private set; }
-
     [SerializeField] TextMeshPro Text;
     [SerializeField]Color PixelColor;
-
     [SerializeField] SpriteRenderer Background;
     [SerializeField] SpriteRenderer Border;
     public bool IsFilledIn
@@ -24,17 +22,14 @@ public class Pixel : GameUnit
             }
         }
     }
-
     public void SetData(Color color, int colorID)
     {
         ID = colorID;
         PixelColor = color;
         Border.color = new Color(0.95f, 0.95f, 0.95f, 1);
         Text.text = colorID.ToString();
-
         Background.color = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);
     }
-
     public void SetSelected(bool selected)
     {
         if (selected)
@@ -52,7 +47,6 @@ public class Pixel : GameUnit
             }
         }
     }
-
     public void Fill()
     {
         if (!IsFilledIn)
@@ -62,7 +56,6 @@ public class Pixel : GameUnit
             Text.text = "";
         }
     }
-
     public void FillWrong()
     {
         if (!IsFilledIn)
