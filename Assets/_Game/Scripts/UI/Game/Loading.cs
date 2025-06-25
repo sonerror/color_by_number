@@ -25,12 +25,12 @@ public class Loading : MonoBehaviour
             {
                 SceneController.Ins.ChangeScene(Const.HOME_SCENE, () =>
                 {
-                    //UIManager.Ins.OpenUI<UIHome>();
-                    LevelManager.Ins.OnLoadLevel(1, () =>
+                    UIManager.Ins.OpenUI<UIHome>();
+                   /* LevelManager.Ins.OnLoadLevel(1, () =>
                     {
                         CameraController.Ins.CenterCameraOnLevel(LevelManager.Ins.CurrentLevelData);
                         GameManager.Ins.ChangeState(GameState.MainMenu);
-                    });
+                    });*/
                 });
             });
         });

@@ -7,9 +7,12 @@ public class LevelList : ScriptableObject
 {
     public List<LevelData> levels = new List<LevelData>();
 
-    public LevelData GetLevel(int index)
+    public LevelData GetLevelByIdIndex(int index)
     {
         return levels.Find(l => l.levelIndex == index);
     }
-
+    public LevelData GetLevel(int index)
+    {
+        return levels[index];
+    }
 }

@@ -1,52 +1,51 @@
 ﻿using TMPro;
 using UnityEngine;
+using DG.Tweening;
 
 public class Pixel : GameUnit
 {
     public int ID { get; private set; }
     [SerializeField] TextMeshPro Text;
-    [SerializeField]Color PixelColor;
+    [SerializeField] Color PixelColor;
     [SerializeField] SpriteRenderer Background;
     [SerializeField] SpriteRenderer Border;
+
+    private Color initialBackgroundColor;
+
     public bool IsFilledIn
     {
         get
         {
-            if (Background.color == PixelColor)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return Background.color == PixelColor;
         }
     }
-    public void SetData(Color color, int colorID)
+
+    public void SetData(int id, Color color)
     {
-        ID = colorID;
+        ID = id;
         PixelColor = color;
         Border.color = new Color(0.95f, 0.95f, 0.95f, 1);
-        Text.text = colorID.ToString();
-        Background.color = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);
+        Text.text = id.ToString();
+
+        initialBackgroundColor = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);
+        Background.color = initialBackgroundColor;
     }
+
     public void SetSelected(bool selected)
     {
-        if (selected)
+        if (!IsFilledIn)
         {
-            if (!IsFilledIn)
+            if (selected)
             {
                 Background.color = new Color(0.5f, 0.5f, 0.5f, 1);
             }
-        }
-        else
-        {
-            if (!IsFilledIn)
+            else
             {
-                Background.color = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);// new Color(1, 1, 1, 1);
+                Background.color = initialBackgroundColor;
             }
         }
     }
+
     public void Fill()
     {
         if (!IsFilledIn)
@@ -54,14 +53,19 @@ public class Pixel : GameUnit
             Border.color = PixelColor;
             Background.color = PixelColor;
             Text.text = "";
+            Background.DOKill();
         }
     }
+
     public void FillWrong()
     {
         if (!IsFilledIn)
         {
-            Background.color = new Color(1, 170/255f, 170/255f, 1);
+            Background.color = new Color(1, 170 / 255f, 170 / 255f, 1);
+
+            Background.DOKill();
+
+            Background.DOColor(initialBackgroundColor, 0.2f).SetDelay(0.3f);
         }
     }
 }
-

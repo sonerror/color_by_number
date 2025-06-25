@@ -1,5 +1,7 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ColorSwatch : MonoBehaviour
 {
@@ -7,28 +9,25 @@ public class ColorSwatch : MonoBehaviour
 
     bool Completed;
     bool Selected;
-    TextMeshPro Text;
-    SpriteRenderer Background;
-    SpriteRenderer Border;
-
-    void Awake()
-    {
-        Border = transform.Find("Border").GetComponent<SpriteRenderer>();
-        Background = transform.Find("Background").GetComponent<SpriteRenderer>();
-        Text = transform.Find("Text").GetComponent<TextMeshPro>();
-    }
+    [SerializeField] TextMeshProUGUI Text;
+    [SerializeField] Image Background;
+    [SerializeField] Image Border;
+    [SerializeField] List<Pixel> listPixelByID;
 
     public void SetData(int id, Color color)
     {
         ID = id;
         Text.text = id.ToString();
         Background.color = color;
+        Border.color = Color.black;
     }
 
     public void SetCompleted()
     {
         Completed = true;
         Text.text = "";
+        Border.color = Color.gray;
+        Selected = false;
     }
 
     public void SetSelected(bool selected)
@@ -45,7 +44,15 @@ public class ColorSwatch : MonoBehaviour
                 Border.color = Color.black;
             }
         }
+        else
+        {
+            Border.color = Color.gray;
+        }
     }
 
-
+    public void OnClick()
+    {
+        Debug.Log("Color Swatch ID Selected: " + ID);
+        LevelManager.Ins.SetSelectedColorID(ID);
+    }
 }
