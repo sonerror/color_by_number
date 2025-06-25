@@ -2,7 +2,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
+using UnityEngine.EventSystems;
+using AssetKits.ParticleImage;
 public class ColorSwatch : MonoBehaviour
 {
     public int ID { get; private set; }
@@ -13,7 +14,7 @@ public class ColorSwatch : MonoBehaviour
     [SerializeField] Image Background;
     [SerializeField] Image Border;
     [SerializeField] List<Pixel> listPixelByID;
-
+    [SerializeField] ParticleImage onCompleteParticle; 
     public void SetData(int id, Color color)
     {
         ID = id;
@@ -21,7 +22,11 @@ public class ColorSwatch : MonoBehaviour
         Background.color = color;
         Border.color = Color.black;
     }
-
+    public void PlayOnCompleteParticle()
+    {
+        onCompleteParticle.startColor = Background.color;
+        onCompleteParticle.Play();
+    }
     public void SetCompleted()
     {
         Completed = true;

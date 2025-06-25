@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 using static LevelData;
-
+using System.Collections;
 public class UIGameplay : UICanvas
 {
     [SerializeField] Transform content;
@@ -23,5 +23,24 @@ public class UIGameplay : UICanvas
             color.SetData(colorSwatch.id, colorSwatch.color);
             listColorSwatch.Add(color);
         }
+    }
+    public void DespawnColorSwatch(int id)
+    {
+        foreach(ColorSwatch color in listColorSwatch)
+        {
+            if(color.ID == id)
+            {
+                color.PlayOnCompleteParticle();
+                StartCoroutine(IE_PlayOnCompleteParticle(color));
+                return; 
+            }
+        }
+    }
+
+    IEnumerator IE_PlayOnCompleteParticle(ColorSwatch color)
+    {
+        yield return new WaitForSeconds(0.45f);
+        miniPool.Despawn(color);
+        listColorSwatch.Remove(color);
     }
 }

@@ -15,13 +15,13 @@ public class LevelManager : Singleton<LevelManager>
     [SerializeField] List<Pixel> activePixels = new List<Pixel>();
 
     private Dictionary<int, List<Pixel>> pixelGroupsByID = new Dictionary<int, List<Pixel>>();
+    private Dictionary<int, int> remainingPixelsInGroup = new Dictionary<int, int>();
 
     public LevelData CurrentLevelData => currentLevelData;
     [SerializeField] int idSelected = 0;
     public int IDSelected => idSelected;
 
     public static event Action<int> OnColorSwatchSelected;
-
     public static event Action<int> OnColorGroupCompleted;
 
     public void OnLoadLevel(int levelIndex, UnityAction onComplete = null)
@@ -37,23 +37,27 @@ public class LevelManager : Singleton<LevelManager>
         }
 
         pixelGroupsByID.Clear();
+        remainingPixelsInGroup.Clear();
 
         for (int i = 0; i < currentLevelData.pixels.Count; i++)
         {
             PixelData pixelData = currentLevelData.pixels[i];
             Pixel pixel = SimplePool.Spawn<Pixel>(PoolType.Pixel, new Vector3(pixelData.position.x, pixelData.position.y, 0), Quaternion.identity);
-            pixel.SetData(pixelData.id,pixelData.color);
+            pixel.SetData(pixelData.id, pixelData.color);
 
             activePixels.Add(pixel);
 
             if (!pixelGroupsByID.ContainsKey(pixelData.id))
             {
                 pixelGroupsByID.Add(pixelData.id, new List<Pixel>());
+                remainingPixelsInGroup.Add(pixelData.id, 0);
             }
             pixelGroupsByID[pixelData.id].Add(pixel);
+            remainingPixelsInGroup[pixelData.id]++;
         }
         UIManager.Ins.GetUI<UIGameplay>().SpawnColorSwitch(listColorSwitch);
 
+        //SelectNextUncompletedColorID();
         onComplete?.Invoke();
     }
 
@@ -65,7 +69,10 @@ public class LevelManager : Singleton<LevelManager>
             {
                 foreach (Pixel p in pixelGroupsByID[idSelected])
                 {
-                    p.SetSelected(false);
+                    if (!p.IsFilledIn)
+                    {
+                        p.SetSelected(false);
+                    }
                 }
             }
             idSelected = newID;
@@ -73,7 +80,10 @@ public class LevelManager : Singleton<LevelManager>
             {
                 foreach (Pixel p in pixelGroupsByID[idSelected])
                 {
-                    p.SetSelected(true);
+                    if (!p.IsFilledIn)
+                    {
+                        p.SetSelected(true);
+                    }
                 }
             }
             OnColorSwatchSelected?.Invoke(idSelected);
@@ -82,42 +92,49 @@ public class LevelManager : Singleton<LevelManager>
 
     public void OnPixelFilled(Pixel filledPixel)
     {
-        if (filledPixel.ID == idSelected)
+        filledPixel.SetSelected(false); 
+
+        if (remainingPixelsInGroup.ContainsKey(filledPixel.ID))
         {
-            if (CheckIfCurrentColorGroupComplete())
+            remainingPixelsInGroup[filledPixel.ID]--;
+
+            if (remainingPixelsInGroup[filledPixel.ID] <= 0)
             {
-                Debug.Log($"Color ID {idSelected} completed!");
-                OnColorGroupCompleted?.Invoke(idSelected);
+                Debug.Log($"Color ID {filledPixel.ID} completed!");
+                OnColorGroupCompleted?.Invoke(filledPixel.ID);
+                if (!CheckIfLevelComplete())
+                {
+                    UIManager.Ins.GetUI<UIGameplay>().DespawnColorSwatch(filledPixel.ID);
+                    SelectNextUncompletedColorID();
+                } else {
+                    Debug.Log("Level Completed!");
+                }
             }
         }
     }
 
-    private bool CheckIfCurrentColorGroupComplete()
+    private void SelectNextUncompletedColorID()
     {
-        if (pixelGroupsByID.ContainsKey(idSelected))
+        foreach (var entry in currentLevelData.colorSwatches)
         {
-            foreach (Pixel p in pixelGroupsByID[idSelected])
+            int colorID = entry.id;
+            
+            if (remainingPixelsInGroup.ContainsKey(colorID) && remainingPixelsInGroup[colorID] > 0)
             {
-                if (!p.IsFilledIn)
-                {
-                    return false;
-                }
+                SetSelectedColorID(colorID);
+                return;
             }
-            return true;
         }
-        return false;
+        SetSelectedColorID(0);
     }
 
     public bool CheckIfLevelComplete()
     {
-        foreach (var group in pixelGroupsByID.Values)
+        foreach (var remainingCount in remainingPixelsInGroup.Values)
         {
-            foreach (Pixel p in group)
+            if (remainingCount >= 0)
             {
-                if (!p.IsFilledIn)
-                {
-                    return false;
-                }
+                return false;
             }
         }
         return true;
@@ -125,23 +142,7 @@ public class LevelManager : Singleton<LevelManager>
 
     private IEnumerator LoadLevelAsync(int levelIndex, UnityAction onComplete = null)
     {
-        for (int i = 0; i < currentLevelData.pixels.Count; i++)
-        {
-            PixelData pixelData = currentLevelData.pixels[i];
-            Pixel pixel = SimplePool.Spawn<Pixel>(PoolType.Pixel, new Vector3(pixelData.position.x, pixelData.position.y, 0), Quaternion.identity);
-            pixel.SetData(pixelData.id,pixelData.color);
-            activePixels.Add(pixel);
-
-            if (!pixelGroupsByID.ContainsKey(pixelData.id))
-            {
-                pixelGroupsByID.Add(pixelData.id, new List<Pixel>());
-            }
-            pixelGroupsByID[pixelData.id].Add(pixel);
-
-            yield return new WaitForSeconds(0.01f);
-        }
-        UIManager.Ins.GetUI<UIGameplay>().SpawnColorSwitch(listColorSwitch);
-        onComplete?.Invoke();
+        yield return null; 
     }
 
     public void OnLoadNextLevel(UnityAction onComplete = null)
@@ -168,5 +169,6 @@ public class LevelManager : Singleton<LevelManager>
             activePixels.Clear();
         }
         pixelGroupsByID.Clear();
+        remainingPixelsInGroup.Clear();
     }
 }

@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 1207389420}
-  zoomSpeed: 0.1
+  zoomSpeed: 0.25
   minZoom: 10
   maxZoom: 40
   zoomTweenDuration: 0.2
