@@ -1,24 +1,43 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 
 public class Player : Singleton<Player>
 {
     [SerializeField] private Camera mainCamera;
-    [SerializeField] private float dragSensitivity = 0.1f;
+
+    [Header("Camera Zoom")]
+    [SerializeField] private float zoomSpeed = 0.1f;
+    [SerializeField] private float minZoom = 2f;
+    [SerializeField] private float maxZoom = 10f;
+    [SerializeField] private float zoomTweenDuration = 0.2f;
+
+    [Header("Camera Pan")]
+    [SerializeField] private float panSensitivity = 1f;
+    [SerializeField] private Vector2 panLimitMin;
+    [SerializeField] private Vector2 panLimitMax;
+
+    [Header("Painting Input")]
+    [SerializeField] private float dragToPaintThreshold = 5f;
 
     private Pixel currentPixelBeingPainted;
-    private Vector2 lastTouchScreenPosition;
-    private bool isDraggingActive = false;
+    private Vector2 lastInputScreenPosition;
+    private Vector3 lastCameraWorldPosition;
+
+    private bool isDraggingForPaint = false;
+    private bool isCameraPanning = false;
 
     private const int MAX_OVERLAP_HITS = 8;
-    private Collider2D[] overlapResultsBuffer = new Collider2D[MAX_OVERLAP_HITS];
+    private readonly Collider2D[] overlapResultsBuffer = new Collider2D[MAX_OVERLAP_HITS];
 
     private void Awake()
     {
+      
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
         }
+        mainCamera.orthographicSize = Mathf.Clamp(mainCamera.orthographicSize, minZoom, maxZoom);
     }
 
     private void Update()
@@ -28,118 +47,197 @@ public class Player : Singleton<Player>
 
     private void HandleInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        int pointerId = Input.touchCount > 0 ? Input.GetTouch(0).fingerId : -1;
+        if (EventSystem.current.IsPointerOverGameObject(pointerId))
         {
-            if (EventSystem.current.IsPointerOverGameObject()) return;
-            OnPointerDown(Input.mousePosition);
+            if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
+            {
+                ResetInteractionState();
+            }
+            return;
         }
-        else if (Input.GetMouseButton(0))
+
+        if (Input.touchCount >= 2)
         {
-            if (EventSystem.current.IsPointerOverGameObject()) return;
-            OnPointerHold(Input.mousePosition);
+            HandlePinchZoom();
+            ResetInteractionState();
+            return;
         }
-        else if (Input.GetMouseButtonUp(0))
+        HandleMouseScrollZoom();
+
+        bool isMouseDown = Input.GetMouseButtonDown(0);
+        bool isTouchBegan = (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began);
+
+        bool isMouseHold = Input.GetMouseButton(0);
+        bool isTouchHold = (Input.touchCount == 1 && (Input.GetTouch(0).phase == TouchPhase.Moved || Input.GetTouch(0).phase == TouchPhase.Stationary));
+
+        bool isMouseUp = Input.GetMouseButtonUp(0);
+        bool isTouchEnded = (Input.touchCount == 1 && (Input.GetTouch(0).phase == TouchPhase.Ended || Input.GetTouch(0).phase == TouchPhase.Canceled));
+
+        Vector2 currentInputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+
+        if (isMouseDown || isTouchBegan)
+        {
+            OnPointerDown(currentInputPosition);
+        }
+        else if (isMouseHold || isTouchHold)
+        {
+            OnPointerDrag(currentInputPosition);
+        }
+        else if (isMouseUp || isTouchEnded)
         {
             OnPointerUp();
-        }
-
-        if (Input.touchCount > 0)
-        {
-            Touch touch = Input.GetTouch(0);
-
-            if (EventSystem.current.IsPointerOverGameObject(touch.fingerId)) return;
-
-            if (touch.phase == TouchPhase.Began)
-            {
-                OnPointerDown(touch.position);
-            }
-            else if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
-            {
-                OnPointerHold(touch.position);
-            }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                OnPointerUp();
-            }
         }
     }
 
     private void OnPointerDown(Vector2 screenPosition)
     {
-        lastTouchScreenPosition = screenPosition;
-        isDraggingActive = false;
-        ProcessInteractionAndPaint(screenPosition, true);
-        Debug.Log("Hit");
+        lastInputScreenPosition = screenPosition;
+        lastCameraWorldPosition = mainCamera.transform.position;
+
+        isDraggingForPaint = false;
+        isCameraPanning = false;
+        currentPixelBeingPainted = null;
+
+        Pixel initialHitPixel = GetPixelAtScreenPosition(screenPosition);
+
+        if (initialHitPixel != null && !initialHitPixel.IsFilledIn)
+        {
+            currentPixelBeingPainted = initialHitPixel;
+            ProcessPainting(screenPosition, isInitialTap: true);
+        }
+        else
+        {
+            isCameraPanning = true;
+        }
     }
 
-    private void OnPointerHold(Vector2 screenPosition)
+    private void OnPointerDrag(Vector2 screenPosition)
     {
-        if (Vector2.Distance(screenPosition, lastTouchScreenPosition) > dragSensitivity)
+        Vector2 deltaScreenPosition = screenPosition - lastInputScreenPosition;
+
+        if (isCameraPanning)
         {
-            isDraggingActive = true;
+            HandleCameraPan(deltaScreenPosition);
+        }
+        else
+        {
+            if (!isDraggingForPaint && Vector2.Distance(screenPosition, lastInputScreenPosition) > dragToPaintThreshold)
+            {
+                isDraggingForPaint = true;
+            }
+
+            if (isDraggingForPaint)
+            {
+                ProcessPainting(screenPosition, isInitialTap: false);
+            }
         }
 
-        if (isDraggingActive)
-        {
-            ProcessInteractionAndPaint(screenPosition, false);
-        }
-        lastTouchScreenPosition = screenPosition;
+        lastInputScreenPosition = screenPosition;
     }
 
     private void OnPointerUp()
     {
-        isDraggingActive = false;
+        ResetInteractionState();
+    }
+
+    private void ResetInteractionState()
+    {
+        isDraggingForPaint = false;
+        isCameraPanning = false;
         currentPixelBeingPainted = null;
     }
 
-    private void ProcessInteractionAndPaint(Vector2 screenPosition, bool isInitialTap)
+    private void HandleMouseScrollZoom()
     {
-        Vector3 worldPoint = mainCamera.ScreenToWorldPoint(screenPosition);
-
-        int numHits = Physics2D.OverlapPointNonAlloc(worldPoint, overlapResultsBuffer);
-        Debug.Log(numHits);
-        for (int i = 0; i < numHits; i++)
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (Mathf.Abs(scroll) > 0.001f)
         {
-            Collider2D hitCollider = overlapResultsBuffer[i];
+            float newZoom = mainCamera.orthographicSize - scroll * zoomSpeed * mainCamera.orthographicSize;
+            ApplyZoom(newZoom);
+        }
+    }
 
-            if (hitCollider == null) continue;
+    private void HandlePinchZoom()
+    {
+        Touch touch0 = Input.GetTouch(0);
+        Touch touch1 = Input.GetTouch(1);
 
-            Pixel hitPixel = hitCollider.GetComponent<Pixel>();
+        Vector2 touch0PrevPos = touch0.position - touch0.deltaPosition;
+        Vector2 touch1PrevPos = touch1.position - touch1.deltaPosition;
 
-            if (hitPixel != null && !hitPixel.IsFilledIn)
+        float prevMagnitude = (touch0PrevPos - touch1PrevPos).magnitude;
+        float currentMagnitude = (touch0.position - touch1.position).magnitude;
+
+        float deltaMagnitude = currentMagnitude - prevMagnitude;
+
+        float newZoom = mainCamera.orthographicSize - deltaMagnitude * zoomSpeed * 0.01f;
+        ApplyZoom(newZoom);
+    }
+
+    private void ApplyZoom(float targetZoom)
+    {
+        targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+
+        mainCamera.DOKill();
+        mainCamera.DOOrthoSize(targetZoom, zoomTweenDuration).SetEase(Ease.OutQuad);
+    }
+
+    private void HandleCameraPan(Vector2 screenDelta)
+    {
+        float unitsPerPixel = mainCamera.orthographicSize * 2f / Screen.height;
+        Vector3 worldDelta = new Vector3(screenDelta.x * unitsPerPixel, screenDelta.y * unitsPerPixel, 0);
+
+        Vector3 newPosition = mainCamera.transform.position - worldDelta * panSensitivity;
+
+        newPosition.x = Mathf.Clamp(newPosition.x, panLimitMin.x, panLimitMax.x);
+        newPosition.y = Mathf.Clamp(newPosition.y, panLimitMin.y, panLimitMax.y);
+        newPosition.z = mainCamera.transform.position.z;
+
+        mainCamera.transform.position = newPosition;
+    }
+
+    private void ProcessPainting(Vector2 screenPosition, bool isInitialTap)
+    {
+        Pixel hitPixel = GetPixelAtScreenPosition(screenPosition);
+
+        if (hitPixel != null && !hitPixel.IsFilledIn)
+        {
+            if (isInitialTap || hitPixel != currentPixelBeingPainted)
             {
-                if (isInitialTap || hitPixel != currentPixelBeingPainted)
+                currentPixelBeingPainted = hitPixel;
+
+                if (hitPixel.ID == LevelManager.Ins.IDSelected)
                 {
-                    currentPixelBeingPainted = hitPixel;
-
-                    if (hitPixel.ID == LevelManager.Ins.IDSelected)
-                    {
-                        hitPixel.Fill();
-                        LevelManager.Ins.OnPixelFilled(hitPixel);
-                        hitPixel.SetSelected(false);
-                    }
-                    else
-                    {
-                        hitPixel.FillWrong();
-                    }
-
-                    return;
+                    hitPixel.Fill();
+                    LevelManager.Ins.OnPixelFilled(hitPixel);
+                }
+                else
+                {
+                    hitPixel.FillWrong();
                 }
             }
         }
-
-        bool noPixelHitInThisInteraction = true;
-        for (int i = 0; i < numHits; i++)
-        {
-            if (overlapResultsBuffer[i] != null && overlapResultsBuffer[i].GetComponent<Pixel>() != null)
-            {
-                noPixelHitInThisInteraction = false;
-                break;
-            }
-        }
-        if (noPixelHitInThisInteraction)
+        else if (hitPixel == null && !isInitialTap && isDraggingForPaint)
         {
             currentPixelBeingPainted = null;
         }
+    }
+
+    private Pixel GetPixelAtScreenPosition(Vector2 screenPosition)
+    {
+        Vector3 worldPoint = mainCamera.ScreenToWorldPoint(screenPosition);
+        int numHits = Physics2D.OverlapPointNonAlloc(worldPoint, overlapResultsBuffer);
+
+        for (int i = 0; i < numHits; i++)
+        {
+            if (overlapResultsBuffer[i] == null) continue;
+
+            if (overlapResultsBuffer[i].TryGetComponent<Pixel>(out var pixel))
+            {
+                return pixel;
+            }
+        }
+        return null;
     }
 }

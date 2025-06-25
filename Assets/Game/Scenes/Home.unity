@@ -149,7 +149,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 1207389420}
-  dragSensitivity: 0.1
+  zoomSpeed: 0.1
+  minZoom: 10
+  maxZoom: 40
+  zoomTweenDuration: 0.2
+  panSensitivity: 1
+  panLimitMin: {x: 0, y: 0}
+  panLimitMax: {x: 0, y: 0}
+  dragToPaintThreshold: 5
 --- !u!4 &944557051
 Transform:
   m_ObjectHideFlags: 0
