@@ -11,7 +11,11 @@ public class Pixel : GameUnit
     [SerializeField] SpriteRenderer Border;
 
     private Color initialBackgroundColor;
-
+    private Color initialTextColor;
+    private void Awake()
+    {
+        initialTextColor = Text.color;
+    }
     public bool IsFilledIn
     {
         get
@@ -24,10 +28,10 @@ public class Pixel : GameUnit
     {
         ID = id;
         PixelColor = color;
-        Border.color = new Color(0.95f, 0.95f, 0.95f, 1);
+        Border.color = new Color(116f / 255f, 116f / 255f, 116f / 255f, 1f);
         Text.text = id.ToString();
-
-        initialBackgroundColor = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);
+        //initialBackgroundColor = Color.Lerp(new Color(PixelColor.grayscale, PixelColor.grayscale, PixelColor.grayscale), Color.white, 0.85f);
+        initialBackgroundColor = Color.white;
         Background.color = initialBackgroundColor;
     }
 
@@ -37,11 +41,13 @@ public class Pixel : GameUnit
         {
             if (selected)
             {
-                Background.color = new Color(0.5f, 0.5f, 0.5f, 1);
+                Background.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+                Text.color = Color.black;
             }
             else
             {
                 Background.color = initialBackgroundColor;
+                Text.color = initialTextColor;
             }
         }
     }

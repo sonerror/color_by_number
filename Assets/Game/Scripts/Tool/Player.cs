@@ -93,47 +93,30 @@ public class Player : Singleton<Player>
     {
         lastInputScreenPosition = screenPosition;
         lastCameraWorldPosition = mainCamera.transform.position;
-
         isDraggingForPaint = false;
         isCameraPanning = false;
         currentPixelBeingPainted = null;
-
         Pixel initialHitPixel = GetPixelAtScreenPosition(screenPosition);
-
-        // --- PHẦN LOGIC ĐƯỢC SỬA ĐỔI ĐỂ PHÂN BIỆT PAN VÀ PAINT ---
         if (initialHitPixel != null && !initialHitPixel.IsFilledIn && initialHitPixel.ID == LevelManager.Ins.IDSelected)
         {
-            // Điều kiện để TOÀN BỘ chắc chắn là tô màu:
-            // - Chạm vào một pixel TỒN TẠI
-            // - Pixel đó CHƯA TÔ
-            // - Pixel đó CÓ ĐÚNG ID ĐANG ĐƯỢC CHỌN
             currentPixelBeingPainted = initialHitPixel;
             ProcessPainting(screenPosition, isInitialTap: true);
-            // isCameraPanning vẫn là false
         }
         else
         {
-            // Các trường hợp còn lại đều sẽ KÍCH HOẠT PAN camera:
-            // - initialHitPixel là null (chạm vào vùng trống)
-            // - initialHitPixel đã IsFilledIn (pixel đã tô rồi)
-            // - initialHitPixel CHƯA TÔ nhưng ID KHÔNG ĐÚNG
             isCameraPanning = true;
-            // Nếu là tap đơn thuần vào pixel sai/đã tô/vùng trống, ProcessPainting không được gọi
-            // và camera sẽ pan khi kéo.
         }
     }
 
     private void OnPointerDrag(Vector2 screenPosition)
     {
         Vector2 deltaScreenPosition = screenPosition - lastInputScreenPosition;
-
         if (isCameraPanning)
         {
             HandleCameraPan(deltaScreenPosition);
         }
         else
         {
-            // Logic này vẫn giữ nguyên, chỉ xử lý khi đang ở chế độ Paint
             if (!isDraggingForPaint && Vector2.Distance(screenPosition, lastInputScreenPosition) > dragToPaintThreshold)
             {
                 isDraggingForPaint = true;
@@ -213,32 +196,21 @@ public class Player : Singleton<Player>
     {
         Pixel hitPixel = GetPixelAtScreenPosition(screenPosition);
 
-        // Luôn kiểm tra điều kiện tô màu ở đây
-        // Ngay cả khi đang kéo để tô, ta vẫn cần đảm bảo pixel hiện tại hợp lệ
         if (hitPixel != null && !hitPixel.IsFilledIn && hitPixel.ID == LevelManager.Ins.IDSelected)
         {
             if (isInitialTap || hitPixel != currentPixelBeingPainted)
             {
-                currentPixelBeingPainted = hitPixel; // Cập nhật pixel đang tô
+                currentPixelBeingPainted = hitPixel;
                 hitPixel.Fill();
                 LevelManager.Ins.OnPixelFilled(hitPixel);
             }
         }
-        else // <-- Nếu hitPixel không hợp lệ để tô (null, đã tô, hoặc sai ID)
+        else
         {
-            // Nếu người dùng đang kéo để tô nhưng chạm vào pixel không hợp lệ,
-            // chúng ta có thể dừng việc tô và cho phép pan (nếu kéo đủ xa).
-            // Tuy nhiên, với logic hiện tại, nếu đã vào trạng thái isDraggingForPaint,
-            // nó sẽ không tự động chuyển sang pan.
-            // Điều này cần được xử lý ở OnPointerDown.
-            // Do đó, logic ở đây chỉ cần đảm bảo không tô nếu không hợp lệ.
-
-            // Reset currentPixelBeingPainted nếu người dùng kéo ra khỏi vùng tô hợp lệ
             if (hitPixel == null && !isInitialTap && isDraggingForPaint)
             {
                 currentPixelBeingPainted = null;
             }
-            // Không làm gì nếu kéo vào pixel sai ID hoặc đã tô trong khi đang ở chế độ painting
         }
     }
 
